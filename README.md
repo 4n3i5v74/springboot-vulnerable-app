@@ -121,6 +121,8 @@ Move to the working folder `cd hello`, and compile the package `./mvnw package`.
 
 Create separate target dependencies `mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)` so the application loads quicker.
 
+At this stage, the application can be run manually `java -jar target/hello-0.0.1-SNAPSHOT.jar`. The name `hello-0.0.1-SNAPSHOT` can be customized in the file `hello/pom.xml`.
+
 ----
 
 ## Create Docker image
