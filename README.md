@@ -129,7 +129,7 @@ At this stage, the application can be run manually `java -jar target/hello-0.0.1
 
 Create the file `vim Dockerfile`.
 ```Shell
-FROM openjdk:18-jdk-alpine
+FROM openjdk:11-jdk-alpine
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 ARG DEPENDENCY=target/dependency
