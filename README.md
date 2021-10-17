@@ -45,54 +45,148 @@ rm hello/src/main/java/hello/HelloApplication.java
 rm hello/src/test/java/hello/HelloApplicationTests.java
 ```
 
-Create new application `vim hello/src/test/java/hello/ApplicationTests.java`
+Create new application `vim hello/src/test/java/hello/Application.java`.
+```Shell
+package hello;
+
+public class Application {
+
+	private final long id;
+	private final String content;
+
+	public Application(long id, String content) {
+		this.id = id;
+		this.content = content;
+	}
+
+	public long getId() {
+		return id;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+}
+```
+
+Create new application controller `vim hello/src/main/java/hello/ApplicationController.java`.
+```Shell
+package hello;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@RestController
+public class ApplicationController {
+
+  private static String template = "Hello, %s!";
+  private static String succes = "Congratulations, here is the flag! flag{%s}";
+  private static String failed = "Wrong Flag! flag{%s}";
+  private static String uuid = "3858FDF6-E53A-47AF-86FD-8CB3830B518F";
+  private static String crackd = "C4reFu!withEnV";
+  private final AtomicLong counter = new AtomicLong();
+
+  @GetMapping("/flag")
+  public Application flag(@RequestParam(value = "flag", defaultValue = "Flag") String flag) {
+  	if (uuid.equals(flag)) {
+  		return new Application(counter.incrementAndGet(), String.format(succes, crackd));
+  	}
+  	else {
+  		return new Application(counter.incrementAndGet(), String.format(failed, flag));
+  	}
+  }
+
+  @RequestMapping("/")
+  public String home() {
+    return "Checkout /flag endpoint!\nIt accepts query string flag\n";
+  }
+
+}
+```
+
+Create new application rest service `vim hello/src/main/java/hello/RestServiceApplication.java`.
 ```Shell
 package hello;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
-@RestController
-public class Application {
-
-  @RequestMapping("/")
-  public String home() {
-    return "Hello Docker World";
-  }
+public class RestServiceApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(Application.class, args);
+    SpringApplication.run(RestServiceApplication.class, args);
   }
 
 }
 ```
 
-Create new application test `vim hello/src/test/java/hello/ApplicationTests.java`
+Create new application test `vim hello/src/test/java/hello/ApplicationControllerTests.java`.
 ```Shell
 package hello;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.jupiter.api.Test;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
-class ApplicationTests {
+@AutoConfigureMockMvc
+public class ApplicationControllerTests {
 
-  @Test
-  void contextLoads() {
-  }
+        @Autowired
+        private MockMvc mockMvc;
+
+        @Test
+        public void noParamApplicationShouldReturnDefaultMessage() throws Exception {
+
+                this.mockMvc.perform(get("/flag")).andDo(print()).andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content").value("Wrong Flag! flag{Flag}"));
+        }
+
+        @Test
+        public void paramApplicationShouldReturnTailoredMessage1() throws Exception {
+
+                this.mockMvc.perform(get("/flag").param("flag", "XYZ"))
+                                .andDo(print()).andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content").value("Wrong Flag! flag{XYZ}"));
+        }
+
+        @Test
+        public void paramApplicationShouldReturnTailoredMessage2() throws Exception {
+
+                this.mockMvc.perform(get("/flag").param("flag", "3858FDF6-E53A-47AF-86FD-8CB3830B518F"))
+                                .andDo(print()).andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content").value("Congratulations, here is the flag! flag{C4reFu!withEnV}"));
+        }
 
 }
 ```
 
+Modify `pom.xml` to specify application version.
+```Shell
+<version>1.0</version>
+```
 ---
 
 ## Expose actuator endpoints
 
 Add following contents to `vim hello/src/main/resources/application.properties`
 ```Shell
+server.port = 9090
+
 management.security.enabled = false
 
 management.endpoint.health.probes.enabled=true
@@ -121,7 +215,7 @@ Move to the working folder `cd hello`, and compile the package `./mvnw package`.
 
 Create separate target dependencies `mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)` so the application loads quicker.
 
-At this stage, the application can be run manually `java -jar target/hello-0.0.1-SNAPSHOT.jar`. The name `hello-0.0.1-SNAPSHOT` can be customized in the file `hello/pom.xml`.
+At this stage, the application can be run manually `java -jar target/hello-1.0.jar`.
 
 ----
 
@@ -137,17 +231,38 @@ COPY ${DEPENDENCY}/BOOT-INF/classes /app
 ENTRYPOINT ["java","-cp","app:app/lib/*","hello.Application"]
 ```
 
-Build the image `docker build --no-cache -t springio/gs-spring-boot-docker .`.
+Build the image `docker build --no-cache -t darkstar/springboot-2021 .`.
 
-Run the image `docker run --rm -p 9091:8080 springio/gs-spring-boot-docker`.
+Run the image `docker run --rm -p 9090:9090 darkstar/springboot-2021`.
 
 ----
 
 ## Test the container
 
+Get home page of web service `curl localhost:9090`.
 ```Shell
-curl localhost:9091
-curl localhost:9091/actuator
+Checkout /flag endpoint!
+It accepts query string flag
+```
+
+Get spring boot actuators from `curl localhost:9090/actuator`.
+```Shell
+{"_links":{"self":{"href":"http://localhost:9090/actuator","templated":false},"beans":{"href":"http://localhost:9090/actuator/beans","templated":false},"caches-cache":{"href":"http://localhost:9090/actuator/caches/{cache}","templated":true},"caches":{"href":"http://localhost:9090/actuator/caches","templated":false},"health":{"href":"http://localhost:9090/actuator/health","templated":false},"health-path":{"href":"http://localhost:9090/actuator/health/{*path}","templated":true},"info":{"href":"http://localhost:9090/actuator/info","templated":false},"conditions":{"href":"http://localhost:9090/actuator/conditions","templated":false},"configprops":{"href":"http://localhost:9090/actuator/configprops","templated":false},"env":{"href":"http://localhost:9090/actuator/env","templated":false},"env-toMatch":{"href":"http://localhost:9090/actuator/env/{toMatch}","templated":true},"loggers":{"href":"http://localhost:9090/actuator/loggers","templated":false},"loggers-name":{"href":"http://localhost:9090/actuator/loggers/{name}","templated":true},"heapdump":{"href":"http://localhost:9090/actuator/heapdump","templated":false},"threaddump":{"href":"http://localhost:9090/actuator/threaddump","templated":false},"metrics":{"href":"http://localhost:9090/actuator/metrics","templated":false},"metrics-requiredMetricName":{"href":"http://localhost:9090/actuator/metrics/{requiredMetricName}","templated":true},"scheduledtasks":{"href":"http://localhost:9090/actuator/scheduledtasks","templated":false},"mappings":{"href":"http://localhost:9090/actuator/mappings","templated":false}}}
+```
+
+Get flag api page `curl localhost:9090/flag`
+```Shell
+{"id":1,"content":"Wrong Flag! flag{Flag}"}
+```
+
+Test a random flag `curl localhost:9090/flag?flag=XYZ`.
+```Shell
+{"id":2,"content":"Wrong Flag! flag{XYZ}"}
+```
+
+Test the correct flag `curl localhost:9090/flag?flag=3858FDF6-E53A-47AF-86FD-8CB3830B518F`.
+```Shell
+{"id":3,"content":"Congratulations, here is the flag! flag{C4reFu!withEnV}"}
 ```
 
 ----
