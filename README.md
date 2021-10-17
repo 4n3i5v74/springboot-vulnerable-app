@@ -228,7 +228,7 @@ ARG DEPENDENCY=target/dependency
 COPY ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY ${DEPENDENCY}/META-INF /app/META-INF
 COPY ${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","hello.Application"]
+ENTRYPOINT ["java","-cp","app:app/lib/*","hello.RestServiceApplication"]
 ```
 
 Build the image `docker build --no-cache -t darkstar/springboot-2021 .`.
@@ -266,3 +266,14 @@ Test the correct flag `curl localhost:9090/flag?flag=3858FDF6-E53A-47AF-86FD-8CB
 ```
 
 ----
+
+## Directory scanning of web app
+
+A simple `gobuster` scan of web app hints availability of following endpoints `gobuster dir -u http://127.0.0.1:9090 -t 20 -w ~/Downloads/directory-list-2.3-medium.txt -q -b "404,400"`.
+```Shell
+/flag                 (Status: 200) [Size: 43]
+/error                (Status: 500) [Size: 86]
+```
+
+----
+
