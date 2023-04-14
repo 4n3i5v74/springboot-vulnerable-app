@@ -1,5 +1,5 @@
 # springboot
-Springboot challenges to launch with 2021 Turkey Trot
+Sample springboot vulnerable and ready for CTF hosting.
 
 ----
 
@@ -11,9 +11,10 @@ Manual steps to prepare the content and image are as below.
 
 ## Download spring boot sample source code
 
-Create a working directory `mkdir -p Darkstar/springboot`.
+Create a working directory `mkdir -p CTF/springboot`.
 
 Visit the [spring initializr url](https://start.spring.io/) and use the following settings to download a sample package.
+
 ```Shell
 Project -> Maven
 Language -> Java
@@ -24,7 +25,7 @@ Dependencies
 Project Metadata
   - Artifact -> hello
   - Name -> hello
-  - Description -> Darkstar spring boot app
+  - Description -> CTF spring boot app
   - Packaging -> jar
   - Java -> 11
 ```
@@ -34,18 +35,21 @@ Project Metadata
 ## Create sample java application
 
 Copy the downloaded sample package and extract it.
+
 ```Shell
 mv ~/Downloads/hello.zip .
 unzip hello.zip
 ```
 
 Cleanup default files.
+
 ```Shell
 rm hello/src/main/java/hello/HelloApplication.java
 rm hello/src/test/java/hello/HelloApplicationTests.java
 ```
 
 Create new application `vim hello/src/test/java/hello/Application.java`.
+
 ```Shell
 package hello;
 
@@ -71,6 +75,7 @@ public class Application {
 ```
 
 Create new application controller `vim hello/src/main/java/hello/ApplicationController.java`.
+
 ```Shell
 package hello;
 
@@ -110,6 +115,7 @@ public class ApplicationController {
 ```
 
 Create new application rest service `vim hello/src/main/java/hello/RestServiceApplication.java`.
+
 ```Shell
 package hello;
 
@@ -127,6 +133,7 @@ public class RestServiceApplication {
 ```
 
 Create new application test `vim hello/src/test/java/hello/ApplicationControllerTests.java`.
+
 ```Shell
 package hello;
 
@@ -176,14 +183,17 @@ public class ApplicationControllerTests {
 ```
 
 Modify `pom.xml` to specify application version.
+
 ```Shell
 <version>1.0</version>
 ```
+
 ---
 
 ## Expose actuator endpoints
 
-Add following contents to `vim hello/src/main/resources/application.properties`
+Add following contents to `vim hello/src/main/resources/application.properties`.
+
 ```Shell
 server.port = 9090
 
@@ -198,8 +208,8 @@ management.endpoint.health.status.http-mapping.out_of_service=503
 management.endpoint.health.status.http-mapping.warning=500
 
 ## Configuring info endpoint
-info.app.name=Darkstar SpringBoot Application
-info.app.description=Darkstar SpringBoot Application
+info.app.name=CTF SpringBoot Application
+info.app.description=CTF SpringBoot Application
 info.app.version=1.0.0
 info.java-vendor = ${java.specification.vendor}
 
@@ -222,6 +232,7 @@ At this stage, the application can be run manually `java -jar target/hello-1.0.j
 ## Create Docker image
 
 Create the file `vim Dockerfile`.
+
 ```Shell
 FROM openjdk:11-jdk-buster
 ARG DEPENDENCY=target/dependency
@@ -231,21 +242,23 @@ COPY ${DEPENDENCY}/BOOT-INF/classes /app
 ENTRYPOINT ["java","-cp","app:app/lib/*","hello.RestServiceApplication"]
 ```
 
-Build the image `docker build --no-cache -t darkstar/springboot-2021 .`.
+Build the image `docker build --no-cache -t CTF/springboot-2021 .`.
 
-Run the image `docker run --rm -p 9090:9090 darkstar/springboot-2021`.
+Run the image `docker run --rm -p 9090:9090 CTF/springboot-2021`.
 
 ----
 
 ## Test the container
 
 Get home page of web service `curl localhost:9090`.
+
 ```Shell
 Checkout /flag endpoint!
 It accepts query string flag
 ```
 
 Get spring boot actuators from `curl localhost:9090/actuator`.
+
 ```Shell
 {
   "_links": {
@@ -329,17 +342,20 @@ Get spring boot actuators from `curl localhost:9090/actuator`.
 }
 ```
 
-Get flag api page `curl localhost:9090/flag`
+Get flag api page `curl localhost:9090/flag`.
+
 ```Shell
 {"id":1,"content":"Wrong Flag! flag{Flag}"}
 ```
 
 Test a random flag `curl localhost:9090/flag?flag=XYZ`.
+
 ```Shell
 {"id":2,"content":"Wrong Flag! flag{XYZ}"}
 ```
 
 Test the correct flag `curl localhost:9090/flag?flag=3858FDF6-E53A-47AF-86FD-8CB3830B518F`.
+
 ```Shell
 {"id":3,"content":"Congratulations, here is the flag! flag{C4reFu!withEnV}"}
 ```
@@ -349,10 +365,10 @@ Test the correct flag `curl localhost:9090/flag?flag=3858FDF6-E53A-47AF-86FD-8CB
 ## Directory scanning of web app
 
 A simple `gobuster` scan of web app hints availability of following endpoints `gobuster dir -u http://127.0.0.1:9090 -t 20 -w ~/Downloads/directory-list-2.3-medium.txt -q -b "404,400"`.
+
 ```Shell
 /flag                 (Status: 200) [Size: 43]
 /error                (Status: 500) [Size: 86]
 ```
 
 ----
-
